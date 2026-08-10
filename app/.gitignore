@@ -1,0 +1,8 @@
+# Base de datos local: nunca debe subirse ni empaquetarse. Cada quien debe
+# generar la suya (se crea sola, con solo la cuenta del comisariado, al
+# correr la app por primera vez).
+metzit.sqlite3
+
+__pycache__/
+*.pyc
+.env

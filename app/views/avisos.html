@@ -1,0 +1,123 @@
+{% extends "base_app.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Avisos comunitarios{% endblock %}
+{% block header_title %}Avisos comunitarios{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/avisos.css') }}">{% endblock %}
+
+{% block content %}
+{{ m.flash_messages() }}
+
+{% if usuario_actual.rol == 'comisariado' %}
+<div class="flex items-center justify-between mb-5">
+  <h2 class="text-sm font-bold" style="color:{{ colores.foreground }}">Todos los avisos</h2>
+  <button type="button" data-toggle-target="form-nuevo-aviso"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.primary }};color:#fff">
+    + Nuevo aviso
+  </button>
+</div>
+
+<form id="form-nuevo-aviso" method="POST" action="{{ url_for('avisos.crear') }}"
+      class="hidden rounded-2xl p-5 mb-6 space-y-3" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Título</label>
+    <input name="titulo" class="form-input" required>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Tipo</label>
+      <select name="tipo" class="form-input" required>
+        {% for clave, info in tipos.items() %}<option value="{{ clave }}">{{ info.label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Alcance</label>
+      <select name="alcance" id="aviso-alcance" class="form-input" required
+              onchange="document.getElementById('aviso-destinatarios-wrap').classList.toggle('hidden', this.value !== 'personal')">
+        <option value="general">General — visible para toda la comunidad</option>
+        <option value="personal">Personal — solo para usuario(s) específicos</option>
+      </select>
+    </div>
+  </div>
+  <div id="aviso-destinatarios-wrap" class="hidden">
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Destinatario(s)</label>
+    <select name="destinatarios" class="form-input" multiple size="5">
+      {% for u in usuarios %}<option value="{{ u.id }}">{{ u.nombre }} — {{ u.usuario }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Contenido</label>
+    <textarea name="contenido" rows="4" class="form-input resize-none" required></textarea>
+  </div>
+  <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Publicar aviso</button>
+</form>
+{% endif %}
+
+<div class="grid grid-cols-1 gap-4">
+  {% for a in avisos %}
+  <div class="rounded-2xl p-4" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        {{ m.badge_tipo_aviso(a.tipo, tipos) }}
+        {{ m.badge_alcance_aviso(a.alcance, alcances) }}
+        <span class="text-[11px]" style="color:{{ colores.muted_fg }}">{{ a.fecha }}{% if a.hora %} · {{ a.hora }} hrs{% endif %} · {{ a.autor }}</span>
+      </div>
+      {% if usuario_actual.rol == 'comisariado' %}
+      <div class="flex gap-2">
+        <button type="button" data-toggle-target="form-editar-aviso-{{ a.id }}"
+                class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:rgba(43,95,110,0.12);color:{{ colores.primary }}">
+          Editar
+        </button>
+        <form method="POST" action="{{ url_for('avisos.eliminar', aviso_id=a.id) }}" onsubmit="return confirm('¿Eliminar este aviso?')">
+          <button type="submit" class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:#fbe4e0;color:{{ colores.destructive }}">Eliminar</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    <p class="text-sm font-bold mb-1" style="color:{{ colores.foreground }};font-family:{{ font_heading }}">{{ a.titulo }}</p>
+    <p class="text-xs mb-1" style="color:{{ colores.muted_fg }}">{{ a.contenido }}</p>
+    {% if usuario_actual.rol == 'comisariado' and a.alcance == 'personal' %}
+    <p class="text-[11px] italic" style="color:{{ colores.muted_fg }}">Dirigido a: {{ a.destinatarios|join(', ') }}</p>
+    {% endif %}
+
+    {% if usuario_actual.rol == 'comisariado' %}
+    <form id="form-editar-aviso-{{ a.id }}" method="POST" action="{{ url_for('avisos.editar', aviso_id=a.id) }}"
+          class="hidden mt-3 space-y-3 p-3 rounded-xl" style="background:rgba(43,95,110,0.04)">
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Título</label>
+        <input name="titulo" class="form-input" value="{{ a.titulo }}" required>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Tipo</label>
+          <select name="tipo" class="form-input" required>
+            {% for clave, info in tipos.items() %}<option value="{{ clave }}" {{ 'selected' if clave == a.tipo }}>{{ info.label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Alcance</label>
+          <select name="alcance" id="aviso-alcance-editar-{{ a.id }}" class="form-input" required
+                  onchange="document.getElementById('aviso-destinatarios-wrap-editar-{{ a.id }}').classList.toggle('hidden', this.value !== 'personal')">
+            <option value="general" {{ 'selected' if a.alcance == 'general' }}>General — visible para toda la comunidad</option>
+            <option value="personal" {{ 'selected' if a.alcance == 'personal' }}>Personal — solo para usuario(s) específicos</option>
+          </select>
+        </div>
+      </div>
+      <div id="aviso-destinatarios-wrap-editar-{{ a.id }}" class="{{ 'hidden' if a.alcance != 'personal' }}">
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Destinatario(s)</label>
+        <select name="destinatarios" class="form-input" multiple size="5">
+          {% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if u.id in a.destinatario_ids }}>{{ u.nombre }} — {{ u.usuario }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Contenido</label>
+        <textarea name="contenido" rows="4" class="form-input resize-none" required>{{ a.contenido }}</textarea>
+      </div>
+      <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar cambios</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="text-xs italic" style="color:{{ colores.muted_fg }}">Aún no hay avisos publicados.</p>
+  {% endfor %}
+</div>
+{% endblock %}

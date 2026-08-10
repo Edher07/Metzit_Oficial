@@ -1,0 +1,145 @@
+{% extends "base_app.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Usuarios{% endblock %}
+{% block header_title %}Usuarios{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/usuarios.css') }}">{% endblock %}
+
+{% block content %}
+{{ m.flash_messages() }}
+
+<div class="flex items-center justify-between mb-5">
+  <h2 class="text-sm font-bold" style="color:{{ colores.foreground }}">Cuentas registradas</h2>
+  <button type="button" data-toggle-target="form-nuevo-usuario"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.primary }};color:#fff">
+    + Nuevo usuario
+  </button>
+</div>
+
+<form id="form-nuevo-usuario" method="POST" action="{{ url_for('usuarios.crear') }}"
+      class="hidden rounded-2xl p-5 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3"
+      style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <p class="md:col-span-3 text-xs" style="color:{{ colores.muted_fg }}">
+    Solo el comisariado puede registrar y validar nuevas cuentas de usuario.
+  </p>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Nombre completo *</label>
+    <input name="nombre" class="form-input" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Usuario (login) *</label>
+    <input name="usuario" class="form-input" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Contraseña temporal *</label>
+    <input type="password" name="password" class="form-input" required minlength="4">
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Parcela</label>
+    <input name="parcela" placeholder="Ej. 1.5 ha — Sector Norte" class="form-input">
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Dirección</label>
+    <input name="direccion" class="form-input">
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Teléfono</label>
+    <input name="telefono" class="form-input">
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Rol</label>
+    <select name="rol" class="form-input">
+      <option value="usuario" selected>Usuario</option>
+      <option value="comisariado">Comisariado</option>
+    </select>
+  </div>
+  <div class="flex items-end">
+    <button type="submit" class="w-full py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Registrar usuario</button>
+  </div>
+</form>
+
+<div class="rounded-2xl overflow-x-auto" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <table class="w-full text-sm">
+    <thead>
+      <tr style="border-bottom:1.5px solid {{ colores.border }}">
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Nombre</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Usuario</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Parcela</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Rol</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Estado</th>
+        <th class="px-4 py-3"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in usuarios %}
+      <tr style="border-bottom:1px solid {{ colores.border }}">
+        <td class="px-4 py-3 font-bold" style="color:{{ colores.foreground }}">{{ u.nombre }}</td>
+        <td class="px-4 py-3" style="color:{{ colores.muted_fg }}">{{ u.usuario }}</td>
+        <td class="px-4 py-3" style="color:{{ colores.muted_fg }}">{{ u.parcela or '—' }}</td>
+        <td class="px-4 py-3 capitalize" style="color:{{ colores.muted_fg }}">{{ u.rol }}</td>
+        <td class="px-4 py-3">
+          <span class="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                style="{{ 'background:rgba(75,120,64,0.14);color:' + colores.secondary if u.activo else 'background:rgba(192,57,43,0.12);color:' + colores.destructive }}">
+            {{ 'Activo' if u.activo else 'Inactivo' }}
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <div class="flex gap-2 justify-end">
+            <form method="POST" action="{{ url_for('usuarios.alternar_activo', usuario_id=u.id) }}">
+              <button type="submit" class="text-xs font-bold px-2.5 py-1 rounded-lg disabled:opacity-40" style="background:{{ colores.muted }};color:{{ colores.foreground }}"
+                      {{ 'disabled' if u.id == usuario_actual.id }}>
+                {{ 'Desactivar' if u.activo else 'Activar' }}
+              </button>
+            </form>
+            <button type="button" data-toggle-target="form-editar-usuario-{{ u.id }}"
+                    class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:rgba(43,95,110,0.12);color:{{ colores.primary }}">
+              Editar
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr id="form-editar-usuario-{{ u.id }}" class="hidden">
+        <td colspan="6" class="px-4 py-4" style="background:rgba(43,95,110,0.04)">
+          <form method="POST" action="{{ url_for('usuarios.editar', usuario_id=u.id) }}"
+                class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Nombre completo *</label>
+              <input name="nombre" class="form-input" value="{{ u.nombre }}" required>
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Parcela</label>
+              <input name="parcela" class="form-input" value="{{ u.parcela or '' }}" placeholder="Ej. 1.5 ha — Sector Norte">
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Dirección</label>
+              <input name="direccion" class="form-input" value="{{ u.direccion or '' }}">
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Teléfono</label>
+              <input name="telefono" class="form-input" value="{{ u.telefono or '' }}">
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Rol</label>
+              <select name="rol" class="form-input" {{ 'disabled' if u.id == usuario_actual.id }}>
+                <option value="usuario" {{ 'selected' if u.rol == 'usuario' }}>Usuario</option>
+                <option value="comisariado" {{ 'selected' if u.rol == 'comisariado' }}>Comisariado</option>
+              </select>
+              {% if u.id == usuario_actual.id %}
+              <input type="hidden" name="rol" value="{{ u.rol }}">
+              <p class="text-[11px] mt-1" style="color:{{ colores.muted_fg }}">No puedes cambiar tu propio rol.</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Nueva contraseña</label>
+              <input type="password" name="password" class="form-input" minlength="4" placeholder="Dejar en blanco para no cambiarla">
+            </div>
+            <div class="md:col-span-3">
+              <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar cambios</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

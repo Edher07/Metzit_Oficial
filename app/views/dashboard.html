@@ -1,0 +1,63 @@
+{% extends "base_app.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Inicio{% endblock %}
+{% block header_title %}Panel de Control{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">{% endblock %}
+
+{% block content %}
+{{ m.flash_messages() }}
+<h1 class="text-xl font-bold mb-1" style="color:{{ colores.foreground }};font-family:{{ font_heading }}">
+  Hola, {{ usuario_actual.nombre.split(' ')[0] if usuario_actual else '' }}
+</h1>
+<p class="text-sm mb-6" style="color:{{ colores.muted_fg }}">Así va la gestión del agua en la comunidad hoy.</p>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+  {% for label, value, icon in [
+    ("Usuarios activos", resumen.usuarios_activos, "users"),
+    ("Turnos esta semana", resumen.turnos_semana, "droplets"),
+    ("Avisos activos", resumen.avisos_activos, "megaphone"),
+    ("Turno en curso", (resumen.turno_en_curso.sector if resumen.turno_en_curso else "Ninguno"), "clock"),
+    ("Mis multas pendientes", resumen.multas_pendientes, "wallet"),
+  ] %}
+  <div class="rounded-2xl p-4" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+    <i data-lucide="{{ icon }}" style="width:18px;height:18px;color:{{ colores.primary }}"></i>
+    <p class="text-2xl font-bold mt-2" style="color:{{ colores.foreground }};font-family:{{ font_heading }}">{{ value }}</p>
+    <p class="text-[11px]" style="color:{{ colores.muted_fg }}">{{ label }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-bold" style="color:{{ colores.foreground }}">Próxima faena / reunión</h2>
+      <a href="{{ url_for('actividades.listar') }}" class="text-xs font-bold" style="color:{{ colores.primary }}">Ver todas →</a>
+    </div>
+    <div class="rounded-2xl p-4" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+      {% if resumen.proxima_actividad %}
+      <p class="text-xs font-bold mb-1" style="color:{{ colores.accent }}">{{ 'Faena' if resumen.proxima_actividad.tipo == 'faena' else 'Junta' }}</p>
+      <p class="text-sm font-bold mb-1" style="color:{{ colores.foreground }}">{{ resumen.proxima_actividad.titulo }}</p>
+      <p class="text-xs" style="color:{{ colores.muted_fg }}">{{ resumen.proxima_actividad.fecha }} · {{ resumen.proxima_actividad.hora }} · {{ resumen.proxima_actividad.lugar }}</p>
+      {% else %}
+      <p class="text-xs italic" style="color:{{ colores.muted_fg }}">No hay faenas ni reuniones programadas.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-bold" style="color:{{ colores.foreground }}">Avisos recientes</h2>
+      <a href="{{ url_for('avisos.listar') }}" class="text-xs font-bold" style="color:{{ colores.primary }}">Ver todos →</a>
+    </div>
+    <div class="rounded-2xl overflow-hidden" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+      {% for a in resumen.avisos_recientes %}
+      <div class="px-4 py-3 last:border-0" style="border-bottom:1px solid {{ colores.border }}">
+        <p class="text-xs font-bold mb-0.5" style="color:{{ colores.foreground }}">{{ a.titulo }}</p>
+        <p class="text-[11px] line-clamp-3" style="color:{{ colores.muted_fg }}">{{ a.contenido }}</p>
+      </div>
+      {% else %}
+      <p class="text-xs italic px-4 py-4" style="color:{{ colores.muted_fg }}">Aún no hay avisos publicados.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

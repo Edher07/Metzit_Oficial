@@ -1,0 +1,139 @@
+{% extends "base_app.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Faenas y reuniones{% endblock %}
+{% block header_title %}Faenas y reuniones{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/actividades.css') }}">{% endblock %}
+
+{% block content %}
+{{ m.flash_messages() }}
+
+{% if usuario_actual.rol == 'comisariado' %}
+<div class="flex items-center justify-between mb-5">
+  <h2 class="text-sm font-bold" style="color:{{ colores.foreground }}">Próximas faenas y reuniones</h2>
+  <button type="button" data-toggle-target="form-nueva-actividad"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.primary }};color:#fff">
+    + Nueva faena/reunión
+  </button>
+</div>
+
+<form id="form-nueva-actividad" method="POST" action="{{ url_for('actividades.crear') }}"
+      class="hidden rounded-2xl p-5 mb-6 grid grid-cols-1 md:grid-cols-2 gap-3" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Tipo</label>
+    <select name="tipo" class="form-input" required>
+      <option value="faena">Faena comunitaria</option>
+      <option value="junta">Junta / reunión</option>
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Título</label>
+    <input name="titulo" class="form-input" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Fecha</label>
+    <input type="date" name="fecha" class="form-input" min="{{ hoy }}" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Hora</label>
+    <input type="time" name="hora" class="form-input" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Lugar</label>
+    <input name="lugar" class="form-input" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Multa por inasistencia (opcional)</label>
+    <input type="number" name="multa" class="form-input" min="0">
+  </div>
+  <div class="md:col-span-2">
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Descripción</label>
+    <textarea name="descripcion" rows="3" class="form-input resize-none"></textarea>
+  </div>
+  <div class="md:col-span-2">
+    <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar</button>
+  </div>
+</form>
+{% endif %}
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% for a in actividades %}
+  {% set asiste = usuario_actual.nombre in a.participantes %}
+  <div class="rounded-2xl p-4" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-[11px] font-bold px-2.5 py-1 rounded-full"
+            style="{{ 'background:rgba(43,95,110,0.12);color:' + colores.primary if a.tipo == 'faena' else 'background:rgba(181,88,42,0.12);color:' + colores.accent }}">
+        {{ 'Faena comunitaria' if a.tipo == 'faena' else 'Junta / reunión' }}
+      </span>
+      {% if usuario_actual.rol == 'comisariado' %}
+      <button type="button" data-toggle-target="form-editar-actividad-{{ a.id }}"
+              class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:rgba(43,95,110,0.12);color:{{ colores.primary }}">
+        Editar
+      </button>
+      {% endif %}
+    </div>
+    <p class="text-sm font-bold mb-1" style="color:{{ colores.foreground }};font-family:{{ font_heading }}">{{ a.titulo }}</p>
+    <p class="text-xs mb-2" style="color:{{ colores.muted_fg }}">{{ a.fecha }} · {{ a.hora }} · {{ a.lugar }}</p>
+    {% if a.descripcion %}<p class="text-xs mb-3" style="color:{{ colores.muted_fg }}">{{ a.descripcion }}</p>{% endif %}
+    {% if a.multa %}<p class="text-xs font-bold mb-3" style="color:{{ colores.destructive }}">Multa por inasistencia: ${{ a.multa }}</p>{% endif %}
+
+    {% if usuario_actual.rol == 'comisariado' %}
+    <form id="form-editar-actividad-{{ a.id }}" method="POST" action="{{ url_for('actividades.editar', actividad_id=a.id) }}"
+          class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 p-3 rounded-xl" style="background:rgba(43,95,110,0.04)">
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Tipo</label>
+        <select name="tipo" class="form-input" required>
+          <option value="faena" {{ 'selected' if a.tipo == 'faena' }}>Faena comunitaria</option>
+          <option value="junta" {{ 'selected' if a.tipo == 'junta' }}>Junta / reunión</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Título</label>
+        <input name="titulo" class="form-input" value="{{ a.titulo }}" required>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Fecha</label>
+        <input type="date" name="fecha" class="form-input" value="{{ a.fecha }}" min="{{ [hoy, a.fecha]|min }}" required>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Hora</label>
+        <input type="time" name="hora" class="form-input" value="{{ a.hora }}" required>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Lugar</label>
+        <input name="lugar" class="form-input" value="{{ a.lugar }}" required>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Multa por inasistencia</label>
+        <input type="number" name="multa" class="form-input" min="0" value="{{ a.multa or '' }}">
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Descripción</label>
+        <textarea name="descripcion" rows="3" class="form-input resize-none">{{ a.descripcion or '' }}</textarea>
+      </div>
+      <div class="md:col-span-2">
+        <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar cambios</button>
+      </div>
+    </form>
+    {% endif %}
+
+    <div class="flex items-center justify-between">
+      {% if usuario_actual.rol == 'comisariado' %}
+      <p class="text-[11px]" style="color:{{ colores.muted_fg }}" title="{{ a.participantes|join(', ') if a.participantes else 'Nadie ha confirmado aún' }}">
+        {{ a.participantes|length }} confirmado(s){% if a.participantes %}: {{ a.participantes|join(', ') }}{% endif %}
+      </p>
+      {% else %}
+      <span></span>
+      {% endif %}
+      <form method="POST" action="{{ url_for('actividades.alternar_asistencia', actividad_id=a.id) }}">
+        <button type="submit" class="text-xs font-bold px-3 py-1.5 rounded-lg"
+                style="{{ 'background:' + colores.secondary + ';color:#fff' if not asiste else 'background:' + colores.muted + ';color:' + colores.foreground }}">
+          {{ 'Cancelar asistencia' if asiste else 'Confirmar asistencia' }}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <p class="text-xs italic" style="color:{{ colores.muted_fg }}">No hay faenas ni reuniones programadas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

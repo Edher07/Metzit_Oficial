@@ -1,0 +1,2 @@
+/* Estilos específicos de la vista de administración de usuarios. */
+table tbody tr:hover { background: rgba(43,95,110,0.04); }

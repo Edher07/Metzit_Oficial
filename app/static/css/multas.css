@@ -1,0 +1,19 @@
+/* Estilos específicos de la vista de multas. */
+.multa-montos > div { min-width: 0; }
+
+.multa-barra {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(28, 18, 9, 0.08);
+  overflow: hidden;
+}
+
+.multa-barra-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }

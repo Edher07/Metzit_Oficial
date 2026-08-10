@@ -1,0 +1,161 @@
+{% extends "base_app.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Multas{% endblock %}
+{% block header_title %}Multas{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/multas.css') }}">{% endblock %}
+
+{% block content %}
+{{ m.flash_messages() }}
+
+{% if usuario_actual.rol == 'comisariado' %}
+<div class="flex items-center justify-between mb-5">
+  <h2 class="text-sm font-bold" style="color:{{ colores.foreground }}">Multas de la comunidad</h2>
+  <button type="button" data-toggle-target="form-nueva-multa"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.primary }};color:#fff">
+    + Nueva multa
+  </button>
+</div>
+
+<form id="form-nueva-multa" method="POST" action="{{ url_for('multas.crear') }}"
+      class="hidden rounded-2xl p-5 mb-6 grid grid-cols-1 md:grid-cols-2 gap-3"
+      style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Usuario</label>
+    <select name="usuario_id" class="form-input" required>
+      {% for u in usuarios %}<option value="{{ u.id }}">{{ u.nombre }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Concepto</label>
+    <input name="concepto" class="form-input" placeholder="Ej. Inasistencia a faena" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Monto total</label>
+    <input type="number" name="monto_total" class="form-input form-input-money" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Fecha</label>
+    <input type="date" name="fecha" class="form-input" value="{{ hoy }}" min="{{ hoy }}" required>
+  </div>
+  <div class="md:col-span-2">
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Descripción (opcional)</label>
+    <textarea name="descripcion" rows="2" class="form-input resize-none"></textarea>
+  </div>
+  <div class="md:col-span-2">
+    <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Registrar multa</button>
+  </div>
+</form>
+{% else %}
+<h2 class="text-sm font-bold mb-5" style="color:{{ colores.foreground }}">Mis multas</h2>
+<p class="text-xs mb-5" style="color:{{ colores.muted_fg }}">
+  Aquí solo puedes ver tus propias multas. El comisariado es quien las registra y actualiza tus abonos.
+</p>
+{% endif %}
+
+<div class="grid grid-cols-1 gap-4">
+  {% for mu in multas %}
+  <div class="rounded-2xl p-4" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        {{ m.badge_estado_multa(mu.estado, estados) }}
+        <span class="text-[11px]" style="color:{{ colores.muted_fg }}">{{ mu.fecha }}</span>
+      </div>
+      {% if usuario_actual.rol == 'comisariado' %}
+      <div class="flex gap-2">
+        {% if mu.estado != 'pagada' %}
+        <button type="button" data-toggle-target="form-abonar-{{ mu.id }}"
+                class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:rgba(75,120,64,0.14);color:{{ colores.secondary }}">
+          Registrar abono
+        </button>
+        {% endif %}
+        <button type="button" data-toggle-target="form-editar-multa-{{ mu.id }}"
+                class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:rgba(43,95,110,0.12);color:{{ colores.primary }}">
+          Editar
+        </button>
+        <form method="POST" action="{{ url_for('multas.eliminar', multa_id=mu.id) }}" onsubmit="return confirm('¿Eliminar esta multa? Esta acción no se puede deshacer.')">
+          <button type="submit" class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:#fbe4e0;color:{{ colores.destructive }}">
+            Eliminar
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if usuario_actual.rol == 'comisariado' %}
+    <p class="text-[11px] font-bold mb-1" style="color:{{ colores.muted_fg }}">{{ mu.usuario_nombre }}</p>
+    {% endif %}
+    <p class="text-sm font-bold mb-1" style="color:{{ colores.foreground }};font-family:{{ font_heading }}">{{ mu.concepto }}</p>
+    {% if mu.descripcion %}<p class="text-xs mb-3" style="color:{{ colores.muted_fg }}">{{ mu.descripcion }}</p>{% endif %}
+
+    <div class="multa-montos grid grid-cols-3 gap-2 mb-2">
+      <div>
+        <p class="text-[10px]" style="color:{{ colores.muted_fg }}">Total</p>
+        <p class="text-sm font-bold" style="color:{{ colores.foreground }}">${{ '%.2f'|format(mu.monto_total) }}</p>
+      </div>
+      <div>
+        <p class="text-[10px]" style="color:{{ colores.muted_fg }}">Abonado</p>
+        <p class="text-sm font-bold" style="color:{{ colores.secondary }}">${{ '%.2f'|format(mu.monto_pagado) }}</p>
+      </div>
+      <div>
+        <p class="text-[10px]" style="color:{{ colores.muted_fg }}">Saldo pendiente</p>
+        <p class="text-sm font-bold" style="color:{{ colores.destructive if mu.saldo > 0 else colores.secondary }}">${{ '%.2f'|format(mu.saldo) }}</p>
+      </div>
+    </div>
+    <div class="multa-barra">
+      <div class="multa-barra-fill" style="width:{{ ((mu.monto_pagado / mu.monto_total * 100) if mu.monto_total else 0)|round(0, 'floor') }}%;background:{{ colores.secondary }}"></div>
+    </div>
+
+    {% set pagos = pagos_por_multa.get(mu.id, []) %}
+    {% if pagos %}
+    <details class="mt-3">
+      <summary class="text-[11px] font-bold cursor-pointer" style="color:{{ colores.primary }}">Historial de abonos ({{ pagos|length }})</summary>
+      <ul class="mt-2 space-y-1">
+        {% for p in pagos %}
+        <li class="text-[11px] flex justify-between" style="color:{{ colores.muted_fg }}">
+          <span>{{ p.fecha }} {{ '· ' + p.registrado_por if usuario_actual.rol == 'comisariado' else '' }}</span>
+          <span class="font-bold" style="color:{{ colores.secondary }}">+${{ '%.2f'|format(p.monto) }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+
+    {% if usuario_actual.rol == 'comisariado' %}
+    <form id="form-abonar-{{ mu.id }}" method="POST" action="{{ url_for('multas.abonar', multa_id=mu.id) }}"
+          class="hidden mt-3 flex gap-2 items-end p-3 rounded-xl" style="background:rgba(75,120,64,0.06)">
+      <div class="flex-1">
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Monto a abonar (saldo: ${{ '%.2f'|format(mu.saldo) }})</label>
+        <input type="number" name="monto" class="form-input form-input-money" inputmode="decimal" min="0.01" max="{{ mu.saldo }}" step="0.01" placeholder="0.00" required>
+      </div>
+      <button type="submit" class="py-2.5 px-4 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Abonar</button>
+    </form>
+
+    <form id="form-editar-multa-{{ mu.id }}" method="POST" action="{{ url_for('multas.editar', multa_id=mu.id) }}"
+          class="hidden mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 p-3 rounded-xl" style="background:rgba(43,95,110,0.04)">
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Concepto</label>
+        <input name="concepto" class="form-input" value="{{ mu.concepto }}" required>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Monto total</label>
+        <input type="number" name="monto_total" class="form-input form-input-money" inputmode="decimal" min="{{ mu.monto_pagado }}" step="0.01" value="{{ '%.2f'|format(mu.monto_total) }}" required>
+      </div>
+      <div>
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Fecha</label>
+        <input type="date" name="fecha" class="form-input" value="{{ mu.fecha }}" min="{{ [hoy, mu.fecha]|min }}" required>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Descripción</label>
+        <textarea name="descripcion" rows="2" class="form-input resize-none">{{ mu.descripcion or '' }}</textarea>
+      </div>
+      <div class="md:col-span-2">
+        <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar cambios</button>
+      </div>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="text-xs italic" style="color:{{ colores.muted_fg }}">No hay multas registradas.</p>
+  {% endfor %}
+</div>
+{% endblock %}

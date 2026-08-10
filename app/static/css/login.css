@@ -1,0 +1,20 @@
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(232,244,248,0.2);
+  background: rgba(255,255,255,0.06);
+  color: #E8F4F8;
+  font-size: 13px;
+}
+.login-input:focus { border-color: #4BB5CC; }
+
+.login-eye-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.login-eye-btn svg { width: 18px; height: 18px; }

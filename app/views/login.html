@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iniciar sesión · Metzit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/utility.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body style="font-family:{{ font_body }}">
+{% import "_macros.html" as m %}
+<div class="min-h-screen flex flex-col items-center justify-center px-4 py-10"
+     style="background:linear-gradient(160deg,{{ colores.sidebar }} 0%,{{ colores.sidebar_2 }} 55%,#0d1e24 100%)">
+
+  <div class="flex flex-col items-center mb-8">
+    <div class="w-20 h-20 rounded-2xl overflow-hidden border-4 mb-4 shadow-xl bg-white flex items-center justify-center" style="border-color:{{ colores.sidebar_primary }}">
+      <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Metzit" class="w-full h-full object-contain p-1"/>
+    </div>
+    <h1 class="text-3xl font-bold mb-1" style="color:{{ colores.sidebar_fg }};font-family:{{ font_heading }}">Metzit</h1>
+    <p class="text-sm italic" style="color:{{ colores.sidebar_primary }}">Agua y Pueblo · Gestión comunitaria de riego</p>
+  </div>
+
+  <div class="w-full max-w-md">
+    <div class="rounded-2xl p-8 shadow-2xl" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12)">
+      <h2 class="text-lg font-bold mb-1" style="color:{{ colores.sidebar_fg }}">Bienvenido de vuelta</h2>
+      <p class="text-xs mb-6" style="color:{{ colores.sidebar_primary }}">Inicia sesión para continuar</p>
+
+      {{ m.flash_messages() }}
+
+      <form method="POST" action="{{ url_for('auth.procesar_login') }}" class="space-y-4">
+        <div>
+          <label class="text-xs font-bold mb-1 block" style="color:{{ colores.sidebar_primary }}">Usuario *</label>
+          <input name="usuario" value="{{ usuario_valor or '' }}" placeholder="usuario" class="login-input" required/>
+        </div>
+
+        <div class="relative">
+          <label class="text-xs font-bold mb-1 block" style="color:{{ colores.sidebar_primary }}">Contraseña *</label>
+          <input name="password" id="login-pass" type="password" placeholder="••••••••" class="login-input pr-12" required/>
+          <button type="button" data-toggle-password="login-pass" class="login-eye-btn" style="color:{{ colores.sidebar_primary }}">
+            <i data-lucide="eye"></i>
+          </button>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 rounded-xl text-sm font-bold mt-2"
+                style="background:{{ colores.sidebar_primary }};color:{{ colores.sidebar }}">
+          Iniciar sesión
+        </button>
+      </form>
+
+      <p class="text-center mt-4 text-[11px]" style="color:rgba(232,244,248,0.6)">
+        ¿No tienes cuenta? Solicítala con el comisariado.
+      </p>
+    </div>
+
+    <p class="text-center mt-4 text-xs" style="color:rgba(232,244,248,0.5)">
+      Demo: usuario <b>comisariado</b> (administrador) — contraseña <b>1234</b>
+    </p>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+</body>
+</html>

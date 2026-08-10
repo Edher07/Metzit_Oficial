@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Página no encontrada · Metzit</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/utility.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+</head>
+<body style="font-family:{{ font_body }};background:{{ colores.background }};color:{{ colores.foreground }}">
+<div class="min-h-screen flex flex-col items-center justify-center px-4 text-center">
+  <p class="text-5xl font-bold mb-2" style="color:{{ colores.primary }};font-family:{{ font_heading }}">404</p>
+  <p class="text-sm mb-6" style="color:{{ colores.muted_fg }}">La página que buscas no existe.</p>
+  <a href="{{ url_for('dashboard.ver') }}" class="px-5 py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.primary }};color:#fff">Volver al inicio</a>
+</div>
+</body>
+</html>

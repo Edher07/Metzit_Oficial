@@ -1,0 +1,165 @@
+{% extends "base_app.html" %}
+{% import "_macros.html" as m %}
+{% block title %}Turnos de riego{% endblock %}
+{% block header_title %}Turnos de riego{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/turnos.css') }}">{% endblock %}
+
+{% block content %}
+{{ m.flash_messages() }}
+
+<div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+  <div class="flex gap-2 flex-wrap">
+    {% for valor, etiqueta in [("todos", "Todos"), ("programado", "Programados"), ("en_curso", "En curso"), ("completado", "Completados"), ("cancelado", "Cancelados")] %}
+    <a href="{{ url_for('turnos.listar', estado=valor) }}" class="px-3 py-1.5 rounded-full text-xs font-bold border"
+       style="{{ 'background:' + colores.primary + ';color:#fff;border-color:' + colores.primary if filtro == valor else 'color:' + colores.muted_fg + ';border-color:' + colores.border }}">
+      {{ etiqueta }}
+    </a>
+    {% endfor %}
+  </div>
+  {% if usuario_actual.rol == 'comisariado' %}
+  <button type="button" data-toggle-target="form-nuevo-turno"
+          class="px-4 py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.primary }};color:#fff">
+    + Nuevo turno
+  </button>
+  {% endif %}
+</div>
+
+{% if usuario_actual.rol == 'comisariado' %}
+<form id="form-nuevo-turno" method="POST" action="{{ url_for('turnos.crear') }}"
+      class="hidden rounded-2xl p-5 mb-6 grid grid-cols-1 md:grid-cols-3 gap-3"
+      style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Usuario</label>
+    <select name="usuario_id" class="form-input" required>
+      {% for u in usuarios %}<option value="{{ u.id }}">{{ u.nombre }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Sector</label>
+    <select name="sector" class="form-input" required>
+      {% for s in sectores %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Fecha</label>
+    <input type="date" name="fecha" id="turno-nuevo-fecha" class="form-input" min="{{ hoy }}" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Hora de inicio</label>
+    <input type="time" name="hora_inicio" id="turno-nuevo-hora-inicio" class="form-input" required>
+  </div>
+  <div>
+    <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Hora de fin</label>
+    <input type="time" name="hora_fin" class="form-input" required>
+  </div>
+  <div class="flex items-end">
+    <button type="submit" class="w-full py-2.5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar turno</button>
+  </div>
+</form>
+<script>
+  // Si la fecha elegida es hoy, la hora de inicio no puede ser anterior a la
+  // hora actual (evita programar turnos "en el pasado" del mismo día).
+  (function () {
+    var hoy = {{ hoy|tojson }};
+    var ahora = {{ ahora|tojson }};
+    var fechaInput = document.getElementById('turno-nuevo-fecha');
+    var horaInput = document.getElementById('turno-nuevo-hora-inicio');
+    if (!fechaInput || !horaInput) return;
+    function actualizarMin() {
+      if (fechaInput.value === hoy) {
+        horaInput.min = ahora;
+      } else {
+        horaInput.removeAttribute('min');
+      }
+    }
+    fechaInput.addEventListener('change', actualizarMin);
+    actualizarMin();
+  })();
+</script>
+{% endif %}
+
+<div class="rounded-2xl overflow-x-auto" style="background:{{ colores.card }};border:1.5px solid {{ colores.border }}">
+  <table class="w-full text-sm">
+    <thead>
+      <tr style="border-bottom:1.5px solid {{ colores.border }}">
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Usuario</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Sector</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Fecha</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Horario</th>
+        <th class="text-left px-4 py-3 text-xs font-bold" style="color:{{ colores.muted_fg }}">Estado</th>
+        {% if usuario_actual.rol == 'comisariado' %}<th class="px-4 py-3"></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in turnos %}
+      <tr style="border-bottom:1px solid {{ colores.border }}">
+        <td class="px-4 py-3 font-bold" style="color:{{ colores.foreground }}">{{ t.usuario_nombre }}</td>
+        <td class="px-4 py-3" style="color:{{ colores.muted_fg }}">{{ t.sector }}</td>
+        <td class="px-4 py-3" style="color:{{ colores.muted_fg }}">{{ t.fecha }}</td>
+        <td class="px-4 py-3" style="color:{{ colores.muted_fg }}">{{ t.hora_inicio }} – {{ t.hora_fin }}</td>
+        <td class="px-4 py-3">{{ m.badge_estado_turno(t.estado, estados) }}</td>
+        {% if usuario_actual.rol == 'comisariado' %}
+        <td class="px-4 py-3">
+          <div class="flex gap-2 justify-end">
+            <form method="POST" action="{{ url_for('turnos.alternar_cancelado', turno_id=t.id, estado=filtro) }}">
+              <button type="submit" class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:{{ colores.muted }};color:{{ colores.foreground }}">
+                {{ 'Reactivar' if t.estado == 'cancelado' else 'Cancelar' }}
+              </button>
+            </form>
+            <button type="button" data-toggle-target="form-editar-turno-{{ t.id }}"
+                    class="text-xs font-bold px-2.5 py-1 rounded-lg" style="background:rgba(43,95,110,0.12);color:{{ colores.primary }}">
+              Editar
+            </button>
+          </div>
+        </td>
+        {% endif %}
+      </tr>
+      {% if usuario_actual.rol == 'comisariado' %}
+      <tr id="form-editar-turno-{{ t.id }}" class="hidden">
+        <td colspan="6" class="px-4 py-4" style="background:rgba(43,95,110,0.04)">
+          <form method="POST" action="{{ url_for('turnos.editar', turno_id=t.id, estado=filtro) }}"
+                class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Usuario</label>
+              <select name="usuario_id" class="form-input" required>
+                {% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if u.id == t.usuario_id }}>{{ u.nombre }}</option>{% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Sector</label>
+              <select name="sector" class="form-input" required>
+                {% for s in sectores %}<option value="{{ s }}" {{ 'selected' if s == t.sector }}>{{ s }}</option>{% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Estado</label>
+              <select name="estado" class="form-input" required>
+                {% for clave, info in estados.items() %}<option value="{{ clave }}" {{ 'selected' if clave == t.estado }}>{{ info.label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Fecha</label>
+              <input type="date" name="fecha" class="form-input" value="{{ t.fecha }}" min="{{ [hoy, t.fecha]|min }}" required>
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Hora de inicio</label>
+              <input type="time" name="hora_inicio" class="form-input" value="{{ t.hora_inicio }}" required>
+            </div>
+            <div>
+              <label class="text-xs font-bold mb-1 block" style="color:{{ colores.muted_fg }}">Hora de fin</label>
+              <input type="time" name="hora_fin" class="form-input" value="{{ t.hora_fin }}" required>
+            </div>
+            <div class="md:col-span-3">
+              <button type="submit" class="py-2.5 px-5 rounded-xl text-sm font-bold" style="background:{{ colores.secondary }};color:#fff">Guardar cambios</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% else %}
+      <tr><td colspan="6" class="px-4 py-6 text-center text-xs italic" style="color:{{ colores.muted_fg }}">No hay turnos que coincidan con este filtro.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

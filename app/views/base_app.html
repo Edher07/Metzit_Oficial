@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{% block title %}Metzit{% endblock %} · Metzit — Agua y Pueblo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/utility.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/base_app.css') }}">
+{% block extra_css %}{% endblock %}
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body style="font-family:{{ font_body }};background:{{ colores.background }};color:{{ colores.foreground }}">
+
+<div class="app-shell">
+  <aside class="app-sidebar" style="background:{{ colores.sidebar }}">
+    <div class="flex items-center gap-2 px-5 py-5">
+      <img src="{{ url_for('static', filename='assets/logo.png') }}" alt="Metzit" style="width:34px;height:34px;object-fit:contain;border-radius:8px">
+      <span class="font-bold text-lg" style="color:{{ colores.sidebar_fg }};font-family:{{ font_heading }}">Metzit</span>
+    </div>
+    <p class="px-5 text-xs mb-4" style="color:{{ colores.sidebar_primary }}">Agua y Pueblo</p>
+    <nav class="flex flex-col gap-1 px-3">
+      {% for item in nav_items %}
+        {% if not item.admin_only or (usuario_actual and usuario_actual.rol == 'comisariado') %}
+        <a href="{{ url_for(item.endpoint) }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold"
+           style="{{ 'background:rgba(75,181,204,0.18);color:' + colores.sidebar_primary if request.endpoint and request.endpoint.startswith(item.id) else 'color:rgba(232,244,248,0.75)' }}">
+          <i data-lucide="{{ item.icon }}" style="width:16px;height:16px"></i>{{ item.label }}
+        </a>
+        {% endif %}
+      {% endfor %}
+    </nav>
+    <div class="mt-auto px-3 pb-5">
+      {% if usuario_actual %}
+      <div class="px-4 py-2 mb-2">
+        <p class="text-xs font-bold" style="color:{{ colores.sidebar_fg }}">{{ usuario_actual.nombre }}</p>
+        <p class="text-[10px]" style="color:{{ colores.sidebar_primary }}">{{ 'Comisariado' if usuario_actual.rol == 'comisariado' else 'Usuario' }}</p>
+      </div>
+      {% endif %}
+      <form method="POST" action="{{ url_for('auth.logout') }}">
+        <button type="submit" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold" style="color:#f2a99a">
+          <i data-lucide="log-out" style="width:16px;height:16px"></i>Cerrar sesión
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="app-content">
+    <header class="flex items-center justify-between px-6" style="height:64px;background:{{ colores.card }};border-bottom:1px solid {{ colores.border }}">
+      <h1 class="text-sm font-bold" style="color:{{ colores.foreground }};font-family:{{ font_heading }}">{% block header_title %}{% endblock %}</h1>
+    </header>
+    <button class="app-mob-toggle md:hidden" data-mobile-toggle style="background:{{ colores.sidebar }}">
+      <i data-lucide="menu"></i>
+    </button>
+    <main class="p-6">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
