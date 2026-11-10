@@ -1,9 +1,5 @@
 # Metzit — Agua y Pueblo — Backend Flask
 
-Aplicación web de gestión comunitaria del agua de riego: turnos de riego,
-avisos comunitarios, faenas y reuniones, catálogo agrícola y administración
-de usuarios. Reescrita como una app **Flask + SQLite** con una página HTML
-y una hoja de estilos por cada pantalla visible.
 
 ## Estructura del proyecto
 
