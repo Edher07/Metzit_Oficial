@@ -1,9 +1,4 @@
-"""Conexión SQLite + esquema + datos semilla para Metzit — Agua y Pueblo.
-
-Reemplaza las constantes SEED_USERS / SEED_TURNOS / SEED_AVISOS / SEED_ACTIVIDADES /
-CULTIVOS que en el prototipo original vivían en memoria del navegador: ahora se
-guardan en una base de datos SQLite real (`metzit.sqlite3`, junto a este archivo)
-la primera vez que se levanta el servidor.
+ vez que se levanta el servidor.
 """
 import sqlite3
 
